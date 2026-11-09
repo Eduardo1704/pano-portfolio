@@ -10,8 +10,9 @@
 
   const P = window.PHOTOS || [];
   const byId = Object.fromEntries(P.map(p => [p.id, p]));
-  const CH = { producto: 'Producto', retrato: 'Retrato', ciudad: 'Ciudad', agua: 'Agua', horizonte: 'Horizonte', mesa: 'Mesa', naturaleza: 'Naturaleza' };
-  const METRIC = { score: 'Selección', light: 'Luz', color: 'Color', depth: 'Profundidad', sym: 'Simetría' };
+  const CH = { producto: 'Producto', retrato: 'Retrato', ciudad: 'Ciudad', agua: 'Agua', horizonte: 'Horizonte', mesa: 'Mesa', naturaleza: 'Naturaleza', interiores: 'Interiores' };
+  P.forEach(p => { p.top = (p.fav ? 1000 : 0) + p.score; }); // favorites first, then Lightroom's own score
+  const METRIC = { top: 'Favoritas', score: 'Selección', light: 'Luz', color: 'Color', depth: 'Profundidad', sym: 'Simetría' };
 
   // Lightroom's raw aesthetic values use different scales (some negative): show each as a 0–100 rank inside this set.
   const rank = {};
@@ -54,7 +55,7 @@
     sheet.append(f);
     return f;
   });
-  let sortKey = 'score', chapter = 'all', cellIn = [];
+  let sortKey = 'top', chapter = 'all', cellIn = [];
   function apply(animate) {
     if (animate && cellIn.length) { // the scroll entrance would fight Flip and strand cells at opacity 0
       cellIn.forEach(s => s.kill()); cellIn = [];
@@ -64,7 +65,7 @@
     [...cells].sort((a, b) => byId[b.dataset.id][sortKey] - byId[a.dataset.id][sortKey]).forEach(c => {
       sheet.append(c);
       c.hidden = !(chapter === 'all' || c.dataset.ch === chapter);
-      const label = `${METRIC[sortKey]} ${rank[c.dataset.id][sortKey]}`;
+      const label = sortKey !== 'top' ? `${METRIC[sortKey]} ${rank[c.dataset.id][sortKey]}` : byId[c.dataset.id].fav ? 'Favorita' : `Selección ${rank[c.dataset.id].score}`;
       const b = c.querySelector('b');
       if (state && !c.hidden && window.ScrambleTextPlugin) gsap.to(b, { duration: 0.7, scrambleText: { text: label, chars: '0123456789', speed: 0.8 } });
       else b.textContent = label;
@@ -259,7 +260,7 @@
   if (fine) {
     const sec = document.querySelector('.trail');
     const field = sec.querySelector('.trail-field');
-    const srcs = P.map(p => `img/${p.id}-s.webp`);
+    const srcs = [...P].sort((a, b) => b.top - a.top).map(p => `img/${p.id}-s.webp`);
     let k = 0, last = null;
     sec.addEventListener('pointermove', e => {
       const r = sec.getBoundingClientRect();
@@ -401,9 +402,7 @@
   }
 
   /* ---------- intro: archive cylinder → apple flies into the O ---------- */
-  const INTRO = ['producto-007', 'agua-128', 'ciudad-104', 'retrato-165', 'mesa-255', 'horizonte-013', 'producto-825', 'ciudad-290',
-    'agua-000', 'retrato-187', 'producto-221', 'horizonte-012', 'mesa-051', 'ciudad-028', 'agua-073', 'retrato-166',
-    'horizonte-042', 'mesa-214', 'producto-238', 'ciudad-121', 'agua-004', 'retrato-208', 'naturaleza-225', 'horizonte-015'];
+  const INTRO = ['producto-007', 'interiores-2051', 'ciudad-028', 'retrato-2037', 'agua-128', 'interiores-2006', 'ciudad-2044', 'naturaleza-2021', 'interiores-2052', 'ciudad-2027', 'retrato-2036', 'mesa-2069', 'interiores-2016', 'ciudad-2048', 'horizonte-2064', 'interiores-2030', 'ciudad-092', 'naturaleza-2028', 'producto-825', 'interiores-2015', 'ciudad-2013', 'naturaleza-225', 'ciudad-2046', 'horizonte-013'];
   function intro(zoom) {
     const el = document.querySelector('.intro');
     if (!el) return Promise.resolve();
